@@ -27,7 +27,11 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      const result = await login(credentials);
+      const result = await login({
+        username: credentials.username.trim(),
+        password: credentials.password
+      });
+      
       if (result.success) {
         if (result.requires2FA) {
           navigate('/2fa-verify', { state: { from } });
@@ -35,10 +39,11 @@ export default function Login() {
           navigate(from, { replace: true });
         }
       } else {
-        setError(result.error || 'Login failed');
+        setError(result.error);
       }
     } catch (error) {
-      setError('An unexpected error occurred');
+      setError('An error occurred while trying to log in');
+      console.error('Login error:', error);
     } finally {
       setIsLoading(false);
     }

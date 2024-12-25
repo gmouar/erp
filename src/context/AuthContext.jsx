@@ -1,6 +1,9 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
+import authService from '../services/authService';
+import sessionManager from '../utils/sessionManager';
 
-export const AuthContext = createContext(null);
+export const AuthContext = createContext({});
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -10,110 +13,94 @@ export const useAuth = () => {
   return context;
 };
 
-const AuthProvider = ({ children }) => {
+export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [role, setRole] = useState('Unassigned');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [requires2FA, setRequires2FA] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let unsubscribe = () => {};
+    
+    const initAuth = async () => {
+      try {
+        const { auth, db } = await import('../config/firebase');
+        
+        unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+          setLoading(true);
+          try {
+            if (firebaseUser) {
+              // Initialize session before setting user
+              sessionManager.initSession();
+              // User data will be set by authService.login
+            } else {
+              setUser(null);
+              sessionManager.clearSession();
+            }
+          } catch (error) {
+            console.error('Error in auth state change:', error);
+            setUser(null);
+            sessionManager.clearSession();
+          } finally {
+            setLoading(false);
+          }
+        });
+      } catch (error) {
+        console.error('Auth initialization failed:', error);
+        setLoading(false);
+      }
+    };
+
+    initAuth();
+    return () => {
+      unsubscribe();
+      sessionManager.stopSessionMonitor();
+    };
+  }, []);
 
   const login = async (credentials) => {
     try {
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credentials)
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        setUser(data.user);
-        setRole(data.role);
-        setIsAuthenticated(true);
-        setRequires2FA(data.requires2FA || false);
-        return { success: true, requires2FA: data.requires2FA };
-      }
-      return { success: false, error: data.message };
+      const result = await authService.login(credentials);
+      setUser(result.user);
+      return { success: true, requires2FA: result.userData?.has2FAEnabled || false };
     } catch (error) {
-      return { success: false, error: 'Login failed' };
+      console.error('Login error:', error);
+      return { success: false, error: error.message };
     }
   };
 
   const register = async (userData) => {
-    const response = await fetch('/api/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userData)
-    });
-    
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message);
-    return data;
+    try {
+      const user = await authService.register(userData);
+      return { success: true, user };
+    } catch (error) {
+      console.error('Registration error:', error);
+      return { success: false, error: error.message };
+    }
   };
 
   const logout = async () => {
     try {
-      await fetch('/api/logout', { method: 'POST' });
+      await authService.logout();
       setUser(null);
-      setRole('Unassigned');
-      setIsAuthenticated(false);
-      setRequires2FA(false);
+      return { success: true };
     } catch (error) {
-      console.error('Logout failed:', error);
-    }
-  };
-
-  const verify2FA = async (code) => {
-    try {
-      const response = await fetch('/api/2fa/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code })
-      });
-      
-      if (response.ok) {
-        setRequires2FA(false);
-        return true;
-      }
-      return false;
-    } catch (error) {
-      throw new Error('2FA verification failed');
-    }
-  };
-
-  const updateUserRole = async (userId, newRole) => {
-    try {
-      const response = await fetch(`/api/users/${userId}/role`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: newRole })
-      });
-      
-      if (!response.ok) throw new Error('Failed to update role');
-      
-      if (user?.id === userId) {
-        setRole(newRole);
-      }
-    } catch (error) {
-      throw new Error('Failed to update user role');
+      console.error('Logout error:', error);
+      return { success: false, error: error.message };
     }
   };
 
   const value = {
     user,
-    role,
-    isAuthenticated,
-    requires2FA,
     login,
     logout,
-    register,
-    verify2FA,
-    updateUserRole
+    register, // Added register to context
+    loading,
+    isAuthenticated: !!user,
+    role: user?.role || 'Unassigned'
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {children}
+      {!loading && children}
     </AuthContext.Provider>
   );
 };

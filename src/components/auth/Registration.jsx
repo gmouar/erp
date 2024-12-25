@@ -55,15 +55,19 @@ const Registration = () => {
 
     setLoading(true);
     try {
-      await register({
-        username: formData.username,
+      const result = await register({
         email: formData.email,
         password: formData.password,
+        username: formData.username,
         firstName: formData.firstName,
-        lastName: formData.lastName,
-        role: 'Unassigned' // Default role for new registrations
+        lastName: formData.lastName
       });
-      navigate('/login');
+
+      if (result.success) {
+        navigate('/login');
+      } else {
+        setError(result.error || 'Registration failed');
+      }
     } catch (err) {
       setError(err.message || 'Failed to create account');
     } finally {

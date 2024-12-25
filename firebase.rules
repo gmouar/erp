@@ -1,0 +1,69 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function hasRole(role) {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
+    }
+    
+    function isSuperuser() {
+      return hasRole('Superuser');
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if isAuthenticated() && 
+        (request.auth.uid == userId || hasRole('HR') || isSuperuser());
+      allow write: if isAuthenticated() && 
+        (request.auth.uid == userId || hasRole('HR') || isSuperuser());
+    }
+
+    // HR Module
+    match /employees/{document=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (hasRole('HR') || isSuperuser());
+    }
+
+    // Finance Module
+    match /budgets/{document=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (hasRole('Finance') || isSuperuser());
+    }
+
+    // Manufacturing Module
+    match /productionOrders/{document=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && 
+        (hasRole('Manufacturing') || hasRole('Production') || isSuperuser());
+    }
+
+    // Sales Module
+    match /leads/{document=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (hasRole('Sales') || isSuperuser());
+    }
+
+    // Supply Chain Module
+    match /purchaseOrders/{document=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && 
+        (hasRole('Supply Chain') || isSuperuser());
+    }
+
+    // Communication Module
+    match /messages/{document=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    // Default rule
+    match /{document=**} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperuser();
+    }
+  }
+}

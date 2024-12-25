@@ -1,4 +1,14 @@
 import axios from 'axios';
+import { 
+  collection,
+  query,
+  where,
+  serverTimestamp 
+} from 'firebase/firestore';
+import { db } from '../config/firebase'; // Updated path
+import { Collections } from '../utils/firebaseCollections';
+import { createService } from '../utils/serviceFactory';
+import { handleApiError } from '../utils/apiErrorHandler';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -19,68 +29,70 @@ api.interceptors.response.use(
   }
 );
 
-const hrService = {
+// Create base services using factory
+const employeeService = createService(Collections.EMPLOYEES);
+const leaveRequestService = createService(Collections.LEAVE_REQUESTS);
+const attendanceService = createService(Collections.ATTENDANCE);
+
+class HRService {
   // Employee Management
-  async getEmployees(params = {}) {
-    return await api.get('/employees', { params });
-  },
+  async getEmployees() {
+    return employeeService.getAll();
+  }
 
   async createEmployee(employeeData) {
-    return await api.post('/employees', employeeData);
-  },
+    return employeeService.create(employeeData);
+  }
 
   async updateEmployee(id, employeeData) {
-    return await api.put(`/employees/${id}`, employeeData);
-  },
+    return employeeService.update(id, employeeData);
+  }
 
-  // Attendance Management
-  async getAttendance(params = {}) {
-    return await api.get('/attendance', { params });
-  },
-
-  async markAttendance(attendanceData) {
-    return await api.post('/attendance', attendanceData);
-  },
+  async deleteEmployee(id) {
+    return employeeService.delete(id);
+  }
 
   // Leave Management
-  async getLeaveRequests(params = {}) {
-    return await api.get('/leave-requests', { params });
-  },
+  async getLeaveRequests() {
+    return leaveRequestService.getAll();
+  }
 
   async submitLeaveRequest(leaveData) {
-    return await api.post('/leave-requests', leaveData);
-  },
+    return leaveRequestService.create(leaveData);
+  }
 
   async updateLeaveRequest(id, status) {
-    return await api.put(`/leave-requests/${id}`, { status });
-  },
-
-  // Recruitment
-  async getJobPostings(params = {}) {
-    return await api.get('/jobs', { params });
-  },
-
-  async createJobPosting(jobData) {
-    return await api.post('/jobs', jobData);
-  },
-
-  async getCandidates(params = {}) {
-    return await api.get('/candidates', { params });
-  },
-
-  // Payroll
-  async getPayrollData(params = {}) {
-    return await api.get('/payroll', { params });
-  },
-
-  async processPayroll(payrollData) {
-    return await api.post('/payroll/process', payrollData);
-  },
-
-  // Reports
-  async generateReport(reportType, params = {}) {
-    return await api.get(`/reports/${reportType}`, { params });
+    return leaveRequestService.update(id, { status });
   }
-};
 
-export default hrService;
+  // Attendance Management
+  async getAttendance(filters = {}) {
+    try {
+      let query = db.collection(Collections.ATTENDANCE);
+      
+      if (filters.startDate) {
+        query = query.where('date', '>=', filters.startDate);
+      }
+      if (filters.endDate) {
+        query = query.where('date', '<=', filters.endDate);
+      }
+      if (filters.employeeId) {
+        query = query.where('employeeId', '==', filters.employeeId);
+      }
+
+      const snapshot = await query.get();
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  }
+
+  async markAttendance(attendanceData) {
+    return attendanceService.create(attendanceData);
+  }
+}
+
+export default new HRService();

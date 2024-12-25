@@ -11,7 +11,8 @@ export default defineConfig({
       'react-router-dom',
       '@mui/x-date-pickers',
       '@mui/x-date-pickers/AdapterDateFns',
-      'axios'  // Add axios to optimization
+      'axios',
+      'firebase/analytics'  // Add this line
     ]
   },
   resolve: {
