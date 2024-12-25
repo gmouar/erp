@@ -1,0 +1,92 @@
+.finance-dashboard {
+  padding: 20px;
+}
+
+.module-nav {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 10px;
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
+.module-nav button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.module-nav button:hover {
+  background: #e0e0e0;
+}
+
+.module-nav button.active {
+  background: #1976d2;
+  color: white;
+}
+
+.payroll-management,
+.budget-management,
+.expense-management,
+.invoice-management,
+.financial-reports {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.form-controls {
+  display: grid;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+th, td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+th {
+  background: #f5f5f5;
+  font-weight: 600;
+}
+
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.85em;
+}
+
+.status-badge.pending { background: #fff3e0; color: #f57c00; }
+.status-badge.approved { background: #e8f5e9; color: #2e7d32; }
+.status-badge.rejected { background: #ffebee; color: #c62828; }
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.report-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.export-options {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
