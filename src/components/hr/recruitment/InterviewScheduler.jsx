@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -6,11 +6,32 @@ import {
   Grid,
   Card,
   CardContent,
-  Button
+  Button,
+  Dialog,
+  TextField,
+  Select,
+  MenuItem
 } from '@mui/material';
+import { DateTimePicker } from '@mui/x-date-pickers';
+import recruitmentService from '../../../services/recruitmentService';
 
 const InterviewScheduler = () => {
-  const [interviews] = useState([]);
+  const [interviews, setInterviews] = useState([]);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedInterview, setSelectedInterview] = useState(null);
+
+  // Component implementation
+  // ...existing code...
+
+  const handleFeedbackSubmit = async (interviewId, feedback, decision) => {
+    try {
+      await recruitmentService.updateInterviewFeedback(interviewId, feedback, decision);
+      // Refresh interviews
+      loadInterviews();
+    } catch (error) {
+      console.error('Error updating interview feedback:', error);
+    }
+  };
 
   return (
     <Box sx={{ p: 3 }}>

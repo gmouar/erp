@@ -8,19 +8,18 @@ export default function ProtectedRoute({ children, allowedRoles, requires2FA = f
   const { user, role, isAuthenticated, requires2FA: userRequires2FA } = useAuth();
   const location = useLocation();
 
+  // Create a single source of redirection logic
   if (!isAuthenticated) {
-    // Redirect to login and save the attempted location
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Check if user needs to complete 2FA setup/verification
   if (requires2FA && userRequires2FA) {
+    // Prevent flooding by using replace
     return <Navigate to="/2fa-verify" state={{ from: location }} replace />;
   }
 
-  // Check role-based access
   if (allowedRoles && !allowedRoles.includes(role)) {
-    auditLogger.unauthorized(user.id, `Attempted to access ${location.pathname}`);
+    // Use replace to prevent navigation stack buildup
     return <Navigate to="/unauthorized" replace />;
   }
 

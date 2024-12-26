@@ -1,52 +1,50 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import HRDashboard from '../components/dashboards/HRDashboard';
+import HRDashboard from '../components/hr/HRDashboard';
 import EmployeeManagement from '../components/hr/employees/EmployeeManagement';
-import RecruitmentModule from '../components/hr/recruitment/RecruitmentModule';
+import RecruitmentManagement from '../components/hr/recruitment/RecruitmentManagement';
 import AttendanceManagement from '../components/hr/attendance/AttendanceManagement';
 import LeaveManagement from '../components/hr/leave/LeaveManagement';
 import PayrollManagement from '../components/hr/payroll/PayrollManagement';
-import PerformanceReviews from '../components/hr/performance/PerformanceReviews';
+import PerformanceManagement from '../components/hr/performance/PerformanceManagement';
+import PolicyManagement from '../components/hr/policies/PolicyManagement';
 
 const HRRoutes = () => {
   const { user, isAuthenticated } = useAuth();
 
-  // Check if user has HR access
-  const hasAccess = () => {
-    if (!isAuthenticated || !user) return false;
-    return ['HR', 'Superuser'].includes(user.role);
-  };
-
-  if (!hasAccess()) {
-    return <Navigate to="/dashboard" replace />;
+  if (!isAuthenticated || user?.role !== 'HR') {
+    return <Navigate to="/login" replace />;
   }
 
   return (
     <Routes>
-      {/* HR Dashboard */}
-      <Route path="/" element={<HRDashboard />} />
-
-      {/* Employee Management */}
-      <Route path="/employees/*" element={<EmployeeManagement />} />
-
-      {/* Recruitment */}
-      <Route path="/recruitment/*" element={<RecruitmentModule />} />
-
-      {/* Attendance */}
-      <Route path="/attendance/*" element={<AttendanceManagement />} />
-
-      {/* Leave Management */}
-      <Route path="/leave/*" element={<LeaveManagement />} />
-
-      {/* Payroll */}
-      <Route path="/payroll/*" element={<PayrollManagement />} />
-
-      {/* Performance Reviews */}
-      <Route path="/performance/*" element={<PerformanceReviews />} />
-
-      {/* Redirect any unmatched routes to HR Dashboard */}
-      <Route path="*" element={<Navigate to="/hr" replace />} />
+      <Route path="/" element={<Navigate to="/hr/dashboard" replace />} />
+      <Route path="dashboard" element={<HRDashboard />} />
+      
+      {/* Employee Management Routes */}
+      <Route path="employees" element={<EmployeeManagement />} />
+      <Route path="employees/new" element={<EmployeeManagement mode="create" />} />
+      <Route path="employees/:id" element={<EmployeeManagement mode="view" />} />
+      <Route path="employees/:id/edit" element={<EmployeeManagement mode="edit" />} />
+      
+      {/* Recruitment Routes */}
+      <Route path="recruitment/*" element={<RecruitmentManagement />} />
+      <Route path="recruitment/jobs/*" element={<RecruitmentManagement type="jobs" />} />
+      <Route path="recruitment/candidates/*" element={<RecruitmentManagement type="candidates" />} />
+      
+      {/* Leave & Attendance Routes */}
+      <Route path="leave/*" element={<LeaveManagement />} />
+      <Route path="attendance/*" element={<AttendanceManagement />} />
+      
+      {/* Payroll Routes */}
+      <Route path="payroll/*" element={<PayrollManagement />} />
+      
+      {/* Performance Routes */}
+      <Route path="performance/*" element={<PerformanceManagement />} />
+      
+      {/* Policy Routes */}
+      <Route path="policies/*" element={<PolicyManagement />} />
     </Routes>
   );
 };

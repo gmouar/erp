@@ -1,58 +1,93 @@
 import React, { useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { Link } from 'react-router-dom';
-import '../styles/dashboard.css';
-import HRDashboard from './dashboards/HRDashboard';
-import FinanceDashboard from './dashboards/FinanceDashboard';
-import ManagerDashboard from './dashboards/ManagerDashboard';
-import EmployeeDashboard from './dashboards/EmployeeDashboard';
-import UnassignedDashboard from './dashboards/UnassignedDashboard';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth'; // Updated import
+import DashboardLayout from './layouts/DashboardLayout';
+import { Box, Grid, Typography, Paper, CircularProgress } from '@mui/material';
+import StatsCard from './common/StatsCard';
+import ModuleCard from './common/ModuleCard';
+import useNotifications from '../hooks/useNotifications';
 
-export default function Dashboard() {
-  const { role, user } = useAuth();
+const Dashboard = () => {
+  const { user, role, isAuthenticated, loading } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user needs 2FA setup (for sensitive roles)
-    if ((role === 'Finance' || role === 'Superuser') && !user.has2FAEnabled) {
-      // Redirect or show 2FA setup modal
-    }
-  }, [role, user]);
+    if (!loading && isAuthenticated && role) {
+      const redirectMap = {
+        'HR': '/hr/dashboard',
+        'Finance': '/finance/dashboard',
+        'Manufacturing Manager': '/manufacturing/dashboard',
+        'Sales': '/sales/dashboard',
+        'Supply Chain Manager': '/supply-chain/dashboard',
+        'Unassigned': '/unassigned/dashboard'
+      };
 
-  const getDashboardByRole = () => {
+      const targetRoute = redirectMap[role];
+      if (targetRoute) {
+        // Use replace instead of push to prevent history stacking
+        requestAnimationFrame(() => {
+          navigate(targetRoute, { replace: true });
+        });
+      }
+    }
+  }, [role, isAuthenticated, loading]);
+
+  if (loading) {
+    return <CircularProgress />;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+
+  const renderRoleDashboard = () => {
     switch (role) {
       case 'HR':
-        return <HRDashboard />;
+        return <Navigate to="/hr" replace />;
       case 'Finance':
-        return <FinanceDashboard />;
-      case 'Manager':
-        return <ManagerDashboard />;
-      case 'Employee':
-        return <EmployeeDashboard />;
-      case 'Field Worker':
-        return <FieldWorkerDashboard />;
-      case 'Work from Home':
-        return <WFHDashboard />;
+        return <Navigate to="/finance" replace />;
+      case 'Manufacturing Manager':
+        return <Navigate to="/manufacturing" replace />;
+      case 'Sales':
+        return <Navigate to="/sales" replace />;
+      case 'Supply Chain Manager':
+        return <Navigate to="/supply-chain" replace />;
+      case 'Unassigned':
+        return (
+          <Box sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Welcome to the ERP System
+            </Typography>
+            <Typography>
+              Your role is currently unassigned. Please contact your administrator for access.
+            </Typography>
+          </Box>
+        );
       default:
-        return <UnassignedDashboard />;
+        return (
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <ModuleCard
+                title="Quick Actions"
+                items={[
+                  { label: 'View Schedule', link: '/schedule' },
+                  { label: 'Submit Request', link: '/requests' },
+                  { label: 'Team Chat', link: '/communication' }
+                ]}
+              />
+            </Grid>
+          </Grid>
+        );
     }
   };
 
   return (
-    <div className="dashboard-container">
-      <header>
-        <h1>Welcome to {role} Dashboard</h1>
-        {(role === 'Finance' || role === 'Superuser') && !user.has2FAEnabled && (
-          <div className="warning-banner">
-            Please set up two-factor authentication for enhanced security
-          </div>
-        )}
-        <nav className="dashboard-nav">
-          <Link to="/communication" className="nav-link">
-            Communication Center
-          </Link>
-        </nav>
-      </header>
-      {getDashboardByRole()}
-    </div>
+    <DashboardLayout>
+      <Box className="dashboard-content">
+        {renderRoleDashboard()}
+      </Box>
+    </DashboardLayout>
   );
-}
+};
+
+export default Dashboard;

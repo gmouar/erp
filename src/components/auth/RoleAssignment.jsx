@@ -26,6 +26,8 @@ import InfoIcon from '@mui/icons-material/Info';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import { useAuth } from '../../context/AuthContext';
+import { createAuditLog } from '../../services/auditService';
+import { sendNotification } from '../../services/notificationService';
 
 const RoleAssignment = () => {
   const [users, setUsers] = useState([]);
@@ -34,6 +36,7 @@ const RoleAssignment = () => {
   const [success, setSuccess] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, user: null, newRole: '' });
   const { user: currentUser, updateUserRole } = useAuth();
 
   const roles = [
@@ -44,6 +47,11 @@ const RoleAssignment = () => {
     'Employee',
     'Field Worker',
     'Work from Home'
+  ];
+
+  const availableRoles = [
+    'User', 'HR', 'Finance', 'Manufacturing Manager',
+    'Sales', 'Supply Chain Manager', 'Superuser'
   ];
 
   useEffect(() => {
@@ -64,18 +72,39 @@ const RoleAssignment = () => {
   };
 
   const handleRoleChange = async (userId, newRole) => {
-    setError('');
-    setSuccess('');
-    
+    setConfirmDialog({ open: true, user: userId, newRole });
+  };
+
+  const confirmRoleChange = async () => {
+    const { user, newRole } = confirmDialog;
     try {
-      await updateUserRole(userId, newRole);
-      setUsers(users.map(user => 
-        user.id === userId ? { ...user, role: newRole } : user
-      ));
-      setSuccess(`Role successfully updated to ${newRole}`);
-    } catch (err) {
-      setError('Failed to update role');
+      // Update role in database
+      await fetch(`/api/users/${user}/role`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: newRole })
+      });
+
+      // Create audit log
+      await createAuditLog({
+        action: 'ROLE_CHANGE',
+        userId: user,
+        details: `Role changed to ${newRole}`
+      });
+
+      // Send notification
+      await sendNotification({
+        userId: user,
+        type: 'ROLE_CHANGE',
+        message: `Your role has been updated to ${newRole}`
+      });
+
+      // Refresh users list
+      fetchUsers();
+    } catch (error) {
+      console.error('Error updating role:', error);
     }
+    setConfirmDialog({ open: false, user: null, newRole: '' });
   };
 
   const handleEditUser = (user) => {
@@ -157,12 +186,12 @@ const RoleAssignment = () => {
                   <TableCell>{user.role}</TableCell>
                   <TableCell>
                     <Select
-                      value={user.role}
+                      value=""
                       onChange={(e) => handleRoleChange(user.id, e.target.value)}
                       size="small"
                       disabled={user.id === currentUser.id}
                     >
-                      {roles.map((role) => (
+                      {availableRoles.map((role) => (
                         <MenuItem key={role} value={role}>
                           {role}
                         </MenuItem>
@@ -229,6 +258,17 @@ const RoleAssignment = () => {
           >
             Save Changes
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={confirmDialog.open} onClose={() => setConfirmDialog({ open: false, user: null, newRole: '' })}>
+        <DialogTitle>Confirm Role Change</DialogTitle>
+        <DialogContent>
+          Are you sure you want to change this user's role?
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDialog({ open: false, user: null, newRole: '' })}>Cancel</Button>
+          <Button onClick={confirmRoleChange} color="primary">Confirm</Button>
         </DialogActions>
       </Dialog>
     </Box>

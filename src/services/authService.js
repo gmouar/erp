@@ -13,8 +13,30 @@ const authService = {
       // Convert username to email format if it's not already an email
       const email = username.includes('@') ? username : `${username}@yourdomain.com`;
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const userDoc = await getDoc(doc(db, "users", userCredential.user.uid));
-      return { user: userCredential.user, userData: userDoc.data() };
+      
+      // Get complete user data from Firestore
+      const userDocRef = doc(db, "users", userCredential.user.uid);
+      const userDoc = await getDoc(userDocRef);
+      const userData = userDoc.data();
+
+      // Update last login
+      await updateDoc(userDocRef, {
+        lastLogin: new Date().toISOString()
+      });
+
+      // Combine Firebase user and Firestore data
+      const user = {
+        ...userCredential.user,
+        ...userData,
+        id: userCredential.user.uid
+      };
+
+      return {
+        success: true,
+        user,
+        userData,
+        requires2FA: userData?.has2FAEnabled || false
+      };
     } catch (error) {
       console.error('Auth error:', error);
       const errorMessage = this.getErrorMessage(error.code);
@@ -71,6 +93,19 @@ const authService = {
       has2FAEnabled: true
     });
     return { success: true };
+  },
+
+  async getUserData(uid) {
+    try {
+      const userDoc = await getDoc(doc(db, "users", uid));
+      if (userDoc.exists()) {
+        return userDoc.data();
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      throw error;
+    }
   },
 
   async logout() {

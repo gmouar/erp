@@ -1,214 +1,140 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Paper,
-  Typography,
-  Button,
-  Grid,
   Card,
-  CardContent,
-  Chip,
-  IconButton,
+  Button,
   Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem
+  CircularProgress,
+  Typography
 } from '@mui/material';
-import {
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Share as ShareIcon
-} from '@mui/icons-material';
+import recruitmentService from '../../../services/recruitmentService';
 
-const JobPostings = () => {
-  const [jobs, setJobs] = useState([]);
-  const [openDialog, setOpenDialog] = useState(false);
-  const [selectedJob, setSelectedJob] = useState(null);
-  const [newJob, setNewJob] = useState({
+const JobPostings = ({ userRole }) => {
+  const [postings, setPostings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [newPosting, setNewPosting] = useState({
     title: '',
     department: '',
-    location: '',
-    type: 'Full-time',
-    experience: '',
     description: '',
     requirements: '',
-    salary: '',
-    status: 'Open'
+    location: '',
+    closingDate: ''
   });
 
-  const departments = [
-    'Engineering',
-    'Sales',
-    'Marketing',
-    'Finance',
-    'HR',
-    'Operations'
-  ];
+  useEffect(() => {
+    loadPostings();
+  }, []);
 
-  const jobTypes = [
-    'Full-time',
-    'Part-time',
-    'Contract',
-    'Internship'
-  ];
+  const loadPostings = async () => {
+    try {
+      const data = await recruitmentService.getActiveJobPostings();
+      setPostings(data);
+    } catch (error) {
+      console.error('Error loading job postings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const handleOpenDialog = (job = null) => {
-    if (job) {
-      setSelectedJob(job);
-      setNewJob(job);
-    } else {
-      setSelectedJob(null);
-      setNewJob({
-        title: '',
-        department: '',
-        location: '',
-        type: 'Full-time',
-        experience: '',
-        description: '',
-        requirements: '',
-        salary: '',
-        status: 'Open'
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await recruitmentService.createJobPosting({
+        ...newPosting,
+        requirements: newPosting.requirements.split('\n')
       });
+      setDialogOpen(false);
+      loadPostings();
+    } catch (error) {
+      console.error('Error creating job posting:', error);
     }
-    setOpenDialog(true);
   };
 
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-    setSelectedJob(null);
-  };
-
-  const handleSaveJob = () => {
-    if (selectedJob) {
-      setJobs(jobs.map(job => 
-        job.id === selectedJob.id ? { ...newJob, id: job.id } : job
-      ));
-    } else {
-      setJobs([...jobs, { ...newJob, id: Date.now() }]);
-    }
-    handleCloseDialog();
-  };
-
-  const handleDeleteJob = (jobId) => {
-    setJobs(jobs.filter(job => job.id !== jobId));
-  };
+  if (loading) return <CircularProgress />;
 
   return (
     <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-        <Typography variant="h5">Job Postings</Typography>
+      {userRole === 'HR' && (
         <Button
           variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => handleOpenDialog()}
+          color="primary"
+          onClick={() => setDialogOpen(true)}
+          sx={{ mb: 3 }}
         >
-          Post New Job
+          Create New Job Posting
         </Button>
-      </Box>
+      )}
 
-      <Grid container spacing={3}>
-        {jobs.map((job) => (
-          <Grid item xs={12} md={6} key={job.id}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6">{job.title}</Typography>
-                <Typography color="textSecondary" gutterBottom>
-                  {job.department} • {job.location}
-                </Typography>
-                <Chip
-                  label={job.type}
-                  size="small"
-                  sx={{ mr: 1 }}
-                />
-                <Chip
-                  label={job.status}
-                  color={job.status === 'Open' ? 'success' : 'default'}
-                  size="small"
-                />
-                <Box sx={{ mt: 2 }}>
-                  <IconButton onClick={() => handleOpenDialog(job)}>
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton onClick={() => handleDeleteJob(job.id)}>
-                    <DeleteIcon />
-                  </IconButton>
-                  <IconButton>
-                    <ShareIcon />
-                  </IconButton>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
-        <DialogTitle>
-          {selectedJob ? 'Edit Job Posting' : 'Create New Job Posting'}
-        </DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Job Title"
-                value={newJob.title}
-                onChange={(e) => setNewJob({ ...newJob, title: e.target.value })}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Department</InputLabel>
-                <Select
-                  value={newJob.department}
-                  label="Department"
-                  onChange={(e) => setNewJob({ ...newJob, department: e.target.value })}
-                >
-                  {departments.map((dept) => (
-                    <MenuItem key={dept} value={dept}>{dept}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Job Type</InputLabel>
-                <Select
-                  value={newJob.type}
-                  label="Job Type"
-                  onChange={(e) => setNewJob({ ...newJob, type: e.target.value })}
-                >
-                  {jobTypes.map((type) => (
-                    <MenuItem key={type} value={type}>{type}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Description"
-                multiline
-                rows={4}
-                value={newJob.description}
-                onChange={(e) => setNewJob({ ...newJob, description: e.target.value })}
-              />
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button onClick={handleSaveJob} variant="contained">
-            {selectedJob ? 'Update' : 'Post'} Job
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
+        <Box component="form" onSubmit={handleSubmit} sx={{ p: 3 }}>
+          <Typography variant="h6">Create New Job Posting</Typography>
+          {/* Dialog form fields */}
+          <TextField
+            fullWidth
+            label="Job Title"
+            value={newPosting.title}
+            onChange={(e) => setNewPosting({ ...newPosting, title: e.target.value })}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            fullWidth
+            label="Department"
+            value={newPosting.department}
+            onChange={(e) => setNewPosting({ ...newPosting, department: e.target.value })}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            fullWidth
+            label="Description"
+            value={newPosting.description}
+            onChange={(e) => setNewPosting({ ...newPosting, description: e.target.value })}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            fullWidth
+            label="Requirements"
+            value={newPosting.requirements}
+            onChange={(e) => setNewPosting({ ...newPosting, requirements: e.target.value })}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            fullWidth
+            label="Location"
+            value={newPosting.location}
+            onChange={(e) => setNewPosting({ ...newPosting, location: e.target.value })}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            fullWidth
+            label="Closing Date"
+            type="date"
+            value={newPosting.closingDate}
+            onChange={(e) => setNewPosting({ ...newPosting, closingDate: e.target.value })}
+            sx={{ mb: 2 }}
+            InputLabelProps={{
+              shrink: true,
+            }}
+          />
+          <Button type="submit" variant="contained" color="primary">
+            Create
           </Button>
-        </DialogActions>
+        </Box>
       </Dialog>
+
+      <Box sx={{ display: 'grid', gap: 2 }}>
+        {postings.map(posting => (
+          <Card key={posting.id} sx={{ p: 2 }}>
+            <Typography variant="h6">{posting.title}</Typography>
+            <Typography>{posting.department}</Typography>
+            <Typography>{posting.description}</Typography>
+            <Typography>{posting.requirements.join(', ')}</Typography>
+            <Typography>{posting.location}</Typography>
+            <Typography>{posting.closingDate}</Typography>
+          </Card>
+        ))}
+      </Box>
     </Box>
   );
 };

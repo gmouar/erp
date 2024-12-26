@@ -1,0 +1,59 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // HR collection rules
+    match /employees/{employeeId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'HR' ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin');
+    }
+    
+    match /leave_requests/{requestId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'HR' ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin' ||
+         resource.data.employeeId == request.auth.uid);
+    }
+    
+    match /attendance/{recordId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'HR' ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin');
+    }
+    
+    match /hr_activities/{activityId} {
+      allow read: if request.auth != null && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'HR' ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin');
+      allow write: if request.auth != null && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'HR' ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin');
+    }
+
+    match /employeeDocuments/{documentId} {
+      allow read: if request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'HR' ||
+        resource.data.employeeId == request.auth.uid
+      );
+      allow write: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'HR';
+    }
+
+    match /trainingRecords/{recordId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'HR';
+    }
+
+    match /hrPolicies/{policyId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'HR';
+    }
+  }
+}

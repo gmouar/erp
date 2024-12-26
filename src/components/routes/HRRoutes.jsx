@@ -10,11 +10,22 @@ import PayrollModule from '../hr/payroll/PayrollModule';
 import PerformanceModule from '../hr/performance/PerformanceModule';
 import TrainingModule from '../hr/training/TrainingModule';
 import EngagementModule from '../hr/engagement/EngagementModule';
+import JobPostings from '../hr/recruitment/JobPostings';
+import InterviewScheduler from '../hr/recruitment/InterviewScheduler';
+import ApplicationReview from '../hr/recruitment/ApplicationReview';
+import RecruitmentDashboard from '../hr/recruitment/RecruitmentDashboard';
 
 const HRRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<HRDashboard />} />
+      
+      {/* Recruitment Routes */}
+      <Route path="/recruitment" element={<RecruitmentDashboard />} />
+      <Route path="/recruitment/jobs" element={<JobPostings userRole="HR" />} />
+      <Route path="/recruitment/applications" element={<ApplicationReview />} />
+      <Route path="/recruitment/interviews" element={<InterviewScheduler />} />
+      
       <Route path="/recruitment/*" element={<RecruitmentModule />} />
       <Route path="/onboarding/*" element={<OnboardingModule />} />
       <Route path="/employees/*" element={<EmployeeManagement />} />

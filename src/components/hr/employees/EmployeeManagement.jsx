@@ -91,11 +91,12 @@ const EmployeeManagement = () => {
     try {
       setLoading(true);
       const data = await hrService.getEmployees();
-      setEmployees(data.employees);
+      setEmployees(data || []); // Ensure we always have an array
       setError(null);
     } catch (err) {
       setError('Failed to fetch employees');
       console.error('Error:', err);
+      setEmployees([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
@@ -335,7 +336,7 @@ const EmployeeManagement = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {employees.map((employee) => (
+            {employees?.map((employee) => ( // Add null check with optional chaining
               <TableRow key={employee.id}>
                 <TableCell>
                   {`${employee.firstName} ${employee.lastName}`}

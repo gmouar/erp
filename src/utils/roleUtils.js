@@ -59,3 +59,16 @@ const permissionMatrix = {
 export const checkPermission = (role, permission) => {
   return permissionMatrix[role]?.[permission] || false;
 };
+
+export const getRoleRedirectPath = (role) => {
+  const redirectMap = {
+    'HR': '/hr/dashboard',
+    'Finance': '/finance/dashboard',
+    'Manufacturing Manager': '/manufacturing/dashboard',
+    'Sales': '/sales/dashboard',
+    'Supply Chain Manager': '/supply-chain/dashboard',
+    'Unassigned': '/unassigned/dashboard'
+  };
+
+  return redirectMap[role] || '/dashboard';
+};

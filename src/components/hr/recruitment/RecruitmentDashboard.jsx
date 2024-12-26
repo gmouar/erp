@@ -21,15 +21,22 @@ import {
   MenuItem,
   Select,
   FormControl,
-  InputLabel
+  InputLabel,
+  Card,
+  CardContent
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import {
+  Work as WorkIcon,
+  Person as PersonIcon,
+  Event as EventIcon
+} from '@mui/icons-material';
 
-const RecruitmentDashboard = () => {
+const RecruitmentDashboard = ({ data }) => {
   const [openJobDialog, setOpenJobDialog] = useState(false);
   const [jobPostings, setJobPostings] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
@@ -180,9 +187,57 @@ const RecruitmentDashboard = () => {
     }
   };
 
+  const stats = {
+    activeJobs: data.jobs.length,
+    totalApplications: data.applications.length,
+    scheduledInterviews: data.interviews.length
+  };
+
   return (
     <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardContent>
+              <Box display="flex" alignItems="center">
+                <WorkIcon sx={{ mr: 2 }} color="primary" />
+                <div>
+                  <Typography color="textSecondary">Active Jobs</Typography>
+                  <Typography variant="h4">{stats.activeJobs}</Typography>
+                </div>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardContent>
+              <Box display="flex" alignItems="center">
+                <PersonIcon sx={{ mr: 2 }} color="primary" />
+                <div>
+                  <Typography color="textSecondary">Total Applications</Typography>
+                  <Typography variant="h4">{stats.totalApplications}</Typography>
+                </div>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardContent>
+              <Box display="flex" alignItems="center">
+                <EventIcon sx={{ mr: 2 }} color="primary" />
+                <div>
+                  <Typography color="textSecondary">Scheduled Interviews</Typography>
+                  <Typography variant="h4">{stats.scheduledInterviews}</Typography>
+                </div>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, mt: 3 }}>
         <Typography variant="h5">Recruitment Dashboard</Typography>
         <Button
           variant="contained"

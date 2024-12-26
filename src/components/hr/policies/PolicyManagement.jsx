@@ -1,115 +1,340 @@
-import React, { useState } from 'react';
-import { useAuth } from '../../../hooks/useAuth';
+import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  Paper,
+  Typography,
+  Button,
+  TextField,
+  Grid,
+  Card,
+  CardContent,
+  Divider,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Chip
+} from '@mui/material';
+import {
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Visibility as VisibilityIcon,
+  Add as AddIcon
+} from '@mui/icons-material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import hrService from '../../../services/hrService';
 
 const PolicyManagement = () => {
-  const { user } = useAuth();
   const [policies, setPolicies] = useState([]);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [selectedPolicy, setSelectedPolicy] = useState(null);
   const [newPolicy, setNewPolicy] = useState({
     title: '',
+    description: '',
     category: 'general',
-    content: '',
-    effectiveDate: '',
-    version: '1.0'
+    effectiveDate: new Date(),
+    status: 'draft',
+    departments: []
   });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const policyWithMetadata = {
-      ...newPolicy,
-      id: Date.now(),
-      createdBy: user.id,
-      createdAt: new Date().toISOString(),
-      status: 'active'
-    };
+  const categories = [
+    'general',
+    'hr',
+    'finance',
+    'it',
+    'security',
+    'compliance'
+  ];
 
-    setPolicies(prev => [...prev, policyWithMetadata]);
+  const departments = [
+    'All',
+    'HR',
+    'Finance',
+    'Engineering',
+    'Marketing',
+    'Sales',
+    'Operations'
+  ];
+
+  useEffect(() => {
+    fetchPolicies();
+  }, []);
+
+  const fetchPolicies = async () => {
+    try {
+      // This would be replaced with actual API call
+      const mockData = [
+        {
+          id: 1,
+          title: 'Work from Home Policy',
+          description: 'Guidelines for remote work arrangements',
+          category: 'hr',
+          effectiveDate: '2024-01-01',
+          status: 'active',
+          departments: ['All'],
+          createdAt: '2023-12-15',
+          lastUpdated: '2023-12-15'
+        },
+        {
+          id: 2,
+          title: 'Information Security Policy',
+          description: 'Guidelines for protecting company data',
+          category: 'security',
+          effectiveDate: '2024-01-01',
+          status: 'active',
+          departments: ['IT', 'Engineering'],
+          createdAt: '2023-12-15',
+          lastUpdated: '2023-12-15'
+        }
+      ];
+      setPolicies(mockData);
+    } catch (error) {
+      console.error('Error fetching policies:', error);
+    }
+  };
+
+  const handleOpenDialog = (policy = null) => {
+    if (policy) {
+      setSelectedPolicy(policy);
+      setNewPolicy(policy);
+    } else {
+      setSelectedPolicy(null);
+      setNewPolicy({
+        title: '',
+        description: '',
+        category: 'general',
+        effectiveDate: new Date(),
+        status: 'draft',
+        departments: []
+      });
+    }
+    setOpenDialog(true);
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setSelectedPolicy(null);
     setNewPolicy({
       title: '',
+      description: '',
       category: 'general',
-      content: '',
-      effectiveDate: '',
-      version: '1.0'
+      effectiveDate: new Date(),
+      status: 'draft',
+      departments: []
     });
   };
 
+  const handleSave = async () => {
+    try {
+      if (selectedPolicy) {
+        // Update existing policy
+        const updatedPolicies = policies.map(policy =>
+          policy.id === selectedPolicy.id ? { ...policy, ...newPolicy } : policy
+        );
+        setPolicies(updatedPolicies);
+      } else {
+        // Create new policy
+        const policy = {
+          id: policies.length + 1,
+          ...newPolicy,
+          createdAt: new Date().toISOString(),
+          lastUpdated: new Date().toISOString()
+        };
+        setPolicies([...policies, policy]);
+      }
+      handleCloseDialog();
+    } catch (error) {
+      console.error('Error saving policy:', error);
+    }
+  };
+
+  const handleDelete = async (policyId) => {
+    try {
+      setPolicies(policies.filter(policy => policy.id !== policyId));
+    } catch (error) {
+      console.error('Error deleting policy:', error);
+    }
+  };
+
   return (
-    <div className="policy-management"></div>
-      <h3>Policy Management</h3>
+    <LocalizationProvider dateAdapter={AdapterDateFns}>
+      <Box sx={{ p: 3 }}>
+        <Typography variant="h5" gutterBottom>
+          Policy Management
+        </Typography>
 
-      <form onSubmit={handleSubmit} className="policy-form"></form>
-        <div className="form-group">
-          <label>Policy Title</label>
-          <input
-            type="text"
-            value={newPolicy.title}
-            onChange={(e) => setNewPolicy({...newPolicy, title: e.target.value})}
-            required
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Category</label>
-          <select
-            value={newPolicy.category}
-            onChange={(e) => setNewPolicy({...newPolicy, category: e.target.value})}
+        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-end' }}>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => handleOpenDialog()}
           >
-            <option value="general">General</option>
-            <option value="leave">Leave</option>
-            <option value="conduct">Code of Conduct</option>
-            <option value="benefits">Benefits</option>
-            <option value="safety">Safety</option>
-          </select>
-        </div>
+            New Policy
+          </Button>
+        </Box>
 
-        <div className="form-group"></div>
-          <label>Policy Content</label>
-          <textarea
-            value={newPolicy.content}
-            onChange={(e) => setNewPolicy({...newPolicy, content: e.target.value})}
-            required
-            rows={10}
-          />
-        </div>
+        <Grid container spacing={3}>
+          {policies.map((policy) => (
+            <Grid item xs={12} key={policy.id}>
+              <Card>
+                <CardContent>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={8}>
+                      <Typography variant="h6">{policy.title}</Typography>
+                      <Typography color="textSecondary" gutterBottom>
+                        Category: {policy.category}
+                      </Typography>
+                      <Typography variant="body2">
+                        {policy.description}
+                      </Typography>
+                      <Box sx={{ mt: 1 }}>
+                        {policy.departments.map((dept) => (
+                          <Chip
+                            key={dept}
+                            label={dept}
+                            size="small"
+                            sx={{ mr: 1 }}
+                          />
+                        ))}
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleOpenDialog(policy)}
+                        >
+                          <EditIcon />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleDelete(policy.id)}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Box>
+                      <Typography variant="body2" color="textSecondary" align="right">
+                        Effective: {new Date(policy.effectiveDate).toLocaleDateString()}
+                      </Typography>
+                      <Typography variant="body2" color="textSecondary" align="right">
+                        Last Updated: {new Date(policy.lastUpdated).toLocaleDateString()}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
 
-        <div className="form-row">
-          <div className="form-group">
-            <label>Effective Date</label>
-            <input
-              type="date"
-              value={newPolicy.effectiveDate}
-              onChange={(e) => setNewPolicy({...newPolicy, effectiveDate: e.target.value})}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Version</label>
-            <input
-              type="text"
-              value={newPolicy.version}
-              onChange={(e) => setNewPolicy({...newPolicy, version: e.target.value})}
-              required
-            />
-          </div>
-        </div>
-
-        <button type="submit" className="submit-button">Publish Policy</button>
-      </form>
-
-      <div className="policies-list"></div>
-        <h4>Active Policies</h4>
-        {policies.map(policy => (
-          <div key={policy.id} className="policy-card">
-            <h5>{policy.title}</h5>
-            <div className="policy-meta">
-              <span>Category: {policy.category}</span>
-              <span>Version: {policy.version}</span>
-              <span>Effective: {policy.effectiveDate}</span>
-            </div>
-            <p className="policy-preview">{policy.content.substring(0, 200)}...</p>
-          </div>
-        ))}
-      </div>
-    </div>
+        <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
+          <DialogTitle>
+            {selectedPolicy ? 'Edit Policy' : 'New Policy'}
+          </DialogTitle>
+          <DialogContent>
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Policy Title"
+                  value={newPolicy.title}
+                  onChange={(e) => setNewPolicy({ ...newPolicy, title: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={4}
+                  label="Description"
+                  value={newPolicy.description}
+                  onChange={(e) => setNewPolicy({ ...newPolicy, description: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Category</InputLabel>
+                  <Select
+                    value={newPolicy.category}
+                    label="Category"
+                    onChange={(e) => setNewPolicy({ ...newPolicy, category: e.target.value })}
+                  >
+                    {categories.map((category) => (
+                      <MenuItem key={category} value={category}>
+                        {category.charAt(0).toUpperCase() + category.slice(1)}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <DatePicker
+                  label="Effective Date"
+                  value={newPolicy.effectiveDate}
+                  onChange={(date) => setNewPolicy({ ...newPolicy, effectiveDate: date })}
+                  renderInput={(params) => <TextField {...params} fullWidth />}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <FormControl fullWidth>
+                  <InputLabel>Applicable Departments</InputLabel>
+                  <Select
+                    multiple
+                    value={newPolicy.departments}
+                    label="Applicable Departments"
+                    onChange={(e) => setNewPolicy({ ...newPolicy, departments: e.target.value })}
+                    renderValue={(selected) => (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {selected.map((value) => (
+                          <Chip key={value} label={value} />
+                        ))}
+                      </Box>
+                    )}
+                  >
+                    {departments.map((department) => (
+                      <MenuItem key={department} value={department}>
+                        {department}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12}>
+                <FormControl fullWidth>
+                  <InputLabel>Status</InputLabel>
+                  <Select
+                    value={newPolicy.status}
+                    label="Status"
+                    onChange={(e) => setNewPolicy({ ...newPolicy, status: e.target.value })}
+                  >
+                    <MenuItem value="draft">Draft</MenuItem>
+                    <MenuItem value="active">Active</MenuItem>
+                    <MenuItem value="archived">Archived</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseDialog}>Cancel</Button>
+            <Button onClick={handleSave} variant="contained">
+              {selectedPolicy ? 'Update' : 'Create'} Policy
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Box>
+    </LocalizationProvider>
   );
 };
 
